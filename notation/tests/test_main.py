@@ -1,4 +1,4 @@
-from main import prefix_to_infix
+from notation.main import prefix_to_infix
 
 
 class TestPrefix:
