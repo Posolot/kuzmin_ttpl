@@ -13,23 +13,23 @@ class TestInterpreter:
         assert interpreter.eval("BEGIN END.") == {}
 
     def test_single_assignment(self, interpreter):
-        result = interpreter.eval("BEGIN x := 10; END.")
-        assert result == {"x": 10.0}
+        result = interpreter.eval("BEGIN x := 9; END.")
+        assert result == {"x": 9.0}
 
     def test_arithmetic_operations(self, interpreter):
-        result = interpreter.eval("BEGIN x := 10; y := x + 2 * (3 - 1); END.")
-        assert result == {"x": 10.0, "y": 14.0}
+        result = interpreter.eval("BEGIN x := 11; y := x + 2 * (3 - 1); END.")
+        assert result == {"x": 11.0, "y": 15.0}
 
     def test_nested_blocks(self, interpreter):
         result = interpreter.eval("""
         BEGIN 
             BEGIN 
-                x := 5; 
+                x := 6; 
             END; 
-            y := x + 2; 
+            y := x + 8; 
         END.
         """)
-        assert result == {"x": 5.0, "y": 7.0}
+        assert result == {"x": 6.0, "y": 14.0}
 
     def test_variable_reassignment(self, interpreter):
         result = interpreter.eval("BEGIN x := 1; x := x + 5; END.")
@@ -39,12 +39,11 @@ class TestInterpreter:
         result = interpreter.eval("BEGIN x := -10; y := +x; z := -x; END.")
         assert result == {"x": -10.0, "y": -10.0, "z": 10.0}
 
-    def test_variable_not_defined_error(self, interpreter):
+    def test_variable_not_defined(self, interpreter):
         with pytest.raises(NameError, match="Variable 'z' is not defined"):
             interpreter.eval("BEGIN x := 10; y := z + 1; END.")
 
-    def test_invalid_operator_error(self, interpreter):
-        # Здесь нужно отключить закомментированный блок в `_visit_binop` для теста.
+    def test_invalid_operator(self, interpreter):
         interpreter._visit_binop = lambda node: (Exception(f"invalid operator: {node.op.value}"))
         with pytest.raises(Exception, match="Bad Token: ?"):
             interpreter.eval("BEGIN x := 10; y := x ? 5; END.")
@@ -57,7 +56,7 @@ class TestInterpreter:
         with pytest.raises(SyntaxError, match="Invalid factor"):
             interpreter.eval("BEGIN x := 10 + ; END.")
 
-    def test_empty_statement_error(self, interpreter):
+    def test_empty_statement(self, interpreter):
         with pytest.raises(SyntaxError, match="Invalid statement"):
             interpreter.eval("BEGIN ; END.")
 
@@ -75,8 +74,8 @@ class TestInterpreter:
         assert result == {}
 
     def test_complex_expression(self, interpreter):
-        result = interpreter.eval("BEGIN x := 2 + 3 * (4 - 1) / 3; END.")
-        assert result == {"x": 5.0}
+        result = interpreter.eval("BEGIN x := 4 + 3 * (4 - 1) / 3; END.")
+        assert result == {"x": 7.0}
 
     def test_unary_op_node(self, interpreter):
         result = interpreter.eval("BEGIN x := -5; END.")
@@ -111,8 +110,8 @@ class TestInterpreter:
 
     def test_extra_token_error(self, interpreter):
         with pytest.raises(SyntaxError, match="Invalid factor"):
-            interpreter.eval("BEGIN x := 10 + ; END.")
+            interpreter.eval("BEGIN x := 11 + ; END.")
 
     def test_without_end(self, interpreter):
         with pytest.raises(SyntaxError, match="Invalid factor"):
-            interpreter.eval("BEGIN x := 10 + ;")
+            interpreter.eval("BEGIN x := 0 + ;")
