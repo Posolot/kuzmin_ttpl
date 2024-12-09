@@ -57,8 +57,8 @@ class Parser():
     def __expr(self) -> BinOp:
         result = self.__term()
         while self._current_token and self._current_token.type_ == TokenType.OPERATOR:
-            if self._current_token.value not in ('+', '-'):
-                break
+            # if self._current_token.value not in ('+', '-'):
+            #     break
             token = self._current_token
             self.__check_token(TokenType.OPERATOR)
 
