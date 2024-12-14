@@ -7,7 +7,6 @@ class InvalidConditionException(Exception):
 
 
 class SpecialDict(dict):
-    @property
     def iloc(self):
         class IlocAccessor:
             def __init__(self, parent):
@@ -19,7 +18,6 @@ class SpecialDict(dict):
 
         return IlocAccessor(self)
 
-    @property
     def ploc(self):
         class PlocAccessor:
             def __init__(self, parent):
@@ -34,8 +32,7 @@ class SpecialDict(dict):
                         result[key] = value
                 return result
 
-            @staticmethod
-            def _parse_key(key: str) -> List[float]:
+            def _parse_key(self, key: str) -> List[float]:
                 if re.search(r'[a-zA-Z]', key):
                     return []
                 filtered_key = re.sub(r'[^\d.,-]', '', key)
@@ -44,8 +41,7 @@ class SpecialDict(dict):
                 except ValueError:
                     return []
 
-            @staticmethod
-            def _parse_condition(condition: str) -> List[Tuple[str, float]]:
+            def _parse_condition(self, condition: str) -> List[Tuple[str, float]]:
                 condition = condition.replace(" ", "")
                 conditions = condition.split(",")
                 parsed_conditions = []
@@ -59,11 +55,12 @@ class SpecialDict(dict):
 
                 return parsed_conditions
 
-            @staticmethod
-            def _match_condition(key_values: List[float], conditions: List[Tuple[str, float]]) -> bool:
+            def _match_condition(self, key_values: List[float], conditions: List[Tuple[str, float]]) -> bool:
                 if len(key_values) != len(conditions):
                     return False
-                for (operator, threshold), key_value in zip(conditions, key_values):
+                for i in range(len(conditions)):
+                    operator, threshold = conditions[i]
+                    key_value = key_values[i]
                     if operator == ">" and not key_value > threshold:
                         return False
                     elif operator == ">=" and not key_value >= threshold:
@@ -76,7 +73,7 @@ class SpecialDict(dict):
                         return False
                     elif operator == "<>" and not key_value != threshold:
                         return False
-
                 return True
 
         return PlocAccessor(self)
+
