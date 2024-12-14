@@ -7,8 +7,9 @@ class InvalidConditionException(Exception):
 
 
 class SpecialDict(dict):
+    @property
     def iloc(self):
-        class IlocAccessor:
+        class IlocPandas:
             def __init__(self, parent):
                 self.parent = parent
 
@@ -16,10 +17,11 @@ class SpecialDict(dict):
                 sorted_keys = sorted(self.parent.keys())
                 return self.parent[sorted_keys[index]]
 
-        return IlocAccessor(self)
+        return IlocPandas(self)
 
+    @property
     def ploc(self):
-        class PlocAccessor:
+        class PlocSearcher:
             def __init__(self, parent):
                 self.parent = parent
 
@@ -27,53 +29,54 @@ class SpecialDict(dict):
                 parsed_conditions = self._parse_condition(condition)
                 result = {}
                 for key, value in self.parent.items():
-                    numeric_key = self._parse_key(key)
-                    if numeric_key and self._match_condition(numeric_key, parsed_conditions):
+                    num_key = self._parse_key(key)
+                    if num_key and self._match_approved_elements(num_key, parsed_conditions):
                         result[key] = value
                 return result
 
             def _parse_key(self, key: str) -> List[float]:
                 if re.search(r'[a-zA-Z]', key):
                     return []
-                filtered_key = re.sub(r'[^\d.,-]', '', key)
-                try:
-                    return [float(num) for num in filtered_key.split(',') if num]
-                except ValueError:
-                    return []
+                filtered_key = re.sub(r'[^\d.,-]', '',key)
+                result = []
+                for num in filtered_key.split(','):
+                    if num:
+                        try:
+                            result.append(float(num))
+                        except ValueError:
+                            pass
+                return result
 
             def _parse_condition(self, condition: str) -> List[Tuple[str, float]]:
-                condition = condition.replace(" ", "")
-                conditions = condition.split(",")
-                parsed_conditions = []
+                cond = condition.replace(" ", "")
+                cond = cond.split(",")
+                pars_cond = []
 
-                for cond in conditions:
-                    match = re.match(r"([<>]=?|==|<>)(-?\d+(\.\d+)?)", cond)
+                for i in cond:
+                    match = re.match(r"([<>]=?|==|<>)(-?\d+(\.\d+)?)", i)
                     if not match:
-                        raise InvalidConditionException(f"Invalid condition: {cond}")
+                        raise InvalidConditionException(f"Invalid condition: {i}")
                     operator, number = match.group(1), float(match.group(2))
-                    parsed_conditions.append((operator, number))
+                    pars_cond.append((operator, number))
 
-                return parsed_conditions
+                return pars_cond
 
-            def _match_condition(self, key_values: List[float], conditions: List[Tuple[str, float]]) -> bool:
+            def _match_approved_elements(self, key_values: List[float], conditions: List[Tuple[str, float]]) -> bool:
                 if len(key_values) != len(conditions):
                     return False
                 for i in range(len(conditions)):
-                    operator, threshold = conditions[i]
+                    operator, limit_num = conditions[i]
                     key_value = key_values[i]
-                    if operator == ">" and not key_value > threshold:
-                        return False
-                    elif operator == ">=" and not key_value >= threshold:
-                        return False
-                    elif operator == "<" and not key_value < threshold:
-                        return False
-                    elif operator == "<=" and not key_value <= threshold:
-                        return False
-                    elif operator == "==" and not key_value == threshold:
-                        return False
-                    elif operator == "<>" and not key_value != threshold:
+                    operators = {
+                        ">": lambda x, y: x > y,
+                        ">=": lambda x, y: x >= y,
+                        "<": lambda x, y: x < y,
+                        "<=": lambda x, y: x <= y,
+                        "==": lambda x, y: x == y,
+                        "<>": lambda x, y: x != y
+                    }
+                    if not operators[operator](key_value, limit_num):
                         return False
                 return True
 
-        return PlocAccessor(self)
-
+        return PlocSearcher(self)

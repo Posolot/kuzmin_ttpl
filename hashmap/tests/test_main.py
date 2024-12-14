@@ -21,7 +21,28 @@ def test_iloc():
     assert data.iloc[8] == 3  # Последний элемент
 
 
-def test_ploc_simple_conditions():
+def test_minus_keys():
+    data = SpecialDict({
+        "1": 1,
+        "-2": 2,
+        "-3": 3
+    })
+    assert data.iloc[0] == 2
+    assert data.iloc[1] == 3
+
+
+def test_float_keys():
+    data = SpecialDict({
+        "1.1": 1,
+        "2.2": 2,
+        "3.3": 3
+    })
+    assert data.iloc[0] == 1
+    assert data.iloc[1] == 2
+    assert data.ploc["<2"] == {"1.1": 1}
+
+
+def test_ploc():
     data = SpecialDict({
         "value1": 1,
         "value2": 2,
@@ -35,7 +56,7 @@ def test_ploc_simple_conditions():
     assert data.ploc["<3"] == {"1": 10, "2": 20}
 
 
-def test_ploc_complex_conditions():
+def test_ploc_key_bracket():
     data = SpecialDict({
         "(1, 5)": 100,
         "(5, 5)": 200,
@@ -50,12 +71,12 @@ def test_ploc_complex_conditions():
     assert data.ploc["<5, >=5, >=3"] == {"(1, 5, 3)": 400}
 
 
-def test_parse_key_value_error_message():
-    data = SpecialDict({",,,,1-1": "test_value"})  # Ключ явно некорректный
+def test_parse_error_key():
+    data = SpecialDict({",,,,1-1": "test_value"})
     assert data.ploc["<5"] == {}
 
 
-def test_match_condition_false():
+def test_all_operation():
     data = SpecialDict({
         "(1, 5)": 100,
         "(5, 5)": 200
@@ -70,4 +91,4 @@ def test_match_condition_false():
 def test_invalid_condition():
     data = SpecialDict({"1": 10, "2": 20})
     with pytest.raises(InvalidConditionException):
-        data.ploc["invalid_condition"]
+        assert data.ploc["invalid_condition"]
