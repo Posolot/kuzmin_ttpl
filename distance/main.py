@@ -60,7 +60,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
 
             sock.send(f"{d}".encode())
             answer = sock.recv(6)
-            print(f"distance -- {d} answer --{answer}")
+            print(f"distance -- {d} answer --{"right"if answer == b"yep" else "wrong"}")
 
             plt.clf()
             plt.title(f"{i}) d = {d}, answer = {answer}")
