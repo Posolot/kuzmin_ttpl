@@ -1,6 +1,7 @@
 import socket
 import numpy as np
 import matplotlib.pyplot as plt
+from skimage.measure import label, regionprops
 
 
 def recvall(sock, n):
@@ -14,8 +15,14 @@ def recvall(sock, n):
     return data
 
 
+def distance(p1, p2):
+    x1, y1 = p1
+    x2, y2 = p2
+    return (np.abs(x1 - x2) ** 2 + np.abs(y1 - y2) ** 2) ** 0.5
+
+
 host = "84.237.21.36"
-port = 5161
+port = 5152
 
 plt.figure()
 plt.ion()
@@ -23,36 +30,49 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
     sock.connect((host, port))
     beat = b"nope"
     i = 0
+    delay = 0.1
 
     while beat != b"yep":
-        print(f"{i})")
         i += 1
 
         sock.send(b"get")
+        bts = recvall(sock, 40_002)
 
-        bts = recvall(sock, 80_004)
-        print(f"Totally gotten: {len(bts)}")
+        image = np.frombuffer(
+            bts[2:],
+            dtype="uint8").reshape(bts[0], bts[1])
 
-        im1 = np.frombuffer(bts[2:40_002], dtype="uint8").reshape(bts[0], bts[1])
-        im2 = np.frombuffer(bts[40_004:], dtype="uint8").reshape(bts[40_002], bts[40_003])
+        img_max = np.max(image)
 
-        pos1 = np.unravel_index(np.argmax(im1), shape=im1.shape)
-        pos2 = np.unravel_index(np.argmax(im2), shape=im2.shape)
-        res = np.abs(np.array(pos1) - np.array(pos2))
+        binary = image.copy()
+        binary[image < img_max * 0.7] = 0
+        binary[image >= img_max * 0.7] = 1
+        labeled = label(binary)
 
-        sock.send(f"{res[0]} {res[1]}".encode())
-        answer = sock.recv(6)
+        points = regionprops(labeled)
+        if len(points) != 2:
+            continue
+        else:
+            pos1 = points[0].centroid
+            pos2 = points[1].centroid
+            d = distance(pos1, pos2)
+            d = round(d, 1)
 
-        plt.clf()
-        plt.title(f"{i}) answer: {answer}, beat: {beat}")
-        plt.subplot(1, 2, 1)
-        plt.imshow(im1)
-        plt.subplot(1, 2, 2)
-        plt.imshow(im2)
-        plt.pause(0.1)
+            sock.send(f"{d}".encode())
+            answer = sock.recv(6)
+            print(f"distance -- {d} answer --{answer}")
+
+            plt.clf()
+            plt.title(f"{i}) d = {d}, answer = {answer}")
+            plt.subplot(1, 3, 1)
+            plt.imshow(image)
+            plt.subplot(1, 3, 2)
+            plt.imshow(binary)
+            plt.subplot(1, 3, 3)
+            plt.imshow(labeled)
+            plt.pause(delay)
 
         sock.send(b"beat")
         beat = sock.recv(6)
 
 print("Done")
-
